@@ -27,3 +27,5 @@ PDB `FComboNode.m_ConditionalAttacks`偏移96，明确类型为`TMap<FGameplayTa
 ## 修订范围
 
 07及此前“姿态槽正背面待核”已被Q1静态槽映射缩小：图中树内引用可标正背，实际镜像／摄像机含义不扩张。攻击高度与输入结论见同批height/input底稿，展示生成逻辑应分别采用证据，不能拿目标部位或攻击强度替代上中下段。
+
+13批后续修订：用户已授权执行徒手补全和名称标注。57节点条件Map现已精确读取，57条全部为Attack.Modifiers替换配置；具体Tag与四槽资产见exports/20261029-徒手补全与命名-13/conditional-attacks.json和notes/player-completeness-13-conditional.md。此前该部分未解表述保留历史身份，运行期应用及其他未解分支不扩大结论。

@@ -2,7 +2,7 @@
 from pathlib import Path
 from urllib.parse import urlparse,unquote
 import json,re,hashlib
-R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-玩家招式图-10'
+R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-徒手补全与命名-13'
 d=json.loads((O/'board-data.json').read_text(encoding='utf-8'))
 t=next(t for t in json.loads((R/'inventory/player-combo-graphs.json').read_text(encoding='utf-8'))['trees'] if t['asset'].endswith('/MainChar_ComboTree.uasset'))
 errors=[];checks=[]
@@ -48,7 +48,19 @@ check('common directional entry keeps user provenance',g['reportedCommonInput'][
 check('drawing model does not invent shared-entry source edges',all('sourceEdgeIndices' in e and all(i in range(len(t['edges'])) for i in e['sourceEdgeIndices']) for e in g['edges']))
 prior=json.loads((R/'exports/20261029-玩家招式图-03/board-data.json').read_text(encoding='utf-8'))
 prior=json.loads(json.dumps(prior,ensure_ascii=False).replace('轻击变体（手势待核）','短按轻击松开·变体').replace('重击变体（手势待核）','短按重击松开·变体'))
-check('only researched labels and evidence added; all graph/config values preserved',{k:v for k,v in d.items() if k!='research'}==prior)
+legacy=json.loads(json.dumps({k:v for k,v in d.items() if k not in ['research','page','pages','legacyNodeIds','completeness','skillNames']}))
+for node in legacy['nodes'].values():node.pop('official',None)
+legacy['graph']['nodes']=[n for n in legacy['graph']['nodes'] if n['id']<1000]
+for node in legacy['graph']['nodes']:node.pop('official',None)
+legacy['graph']['height']=prior['graph']['height']
+check('all original graph/config numeric values and relationships preserved',legacy==prior)
+check('three independent actions added without invented edges',len(g['nodes'])==36 and {n['id'] for n in g['nodes'] if n.get('action')}=={1001,1002,1003} and all(e['source']<1000 and (e['target'] is None or e['target']<1000) for e in g['edges']))
+check('25 official menu entries associated with graph',len(d['completeness']['menuCoverage'])==25 and all(x['nodes'] for x in d['completeness']['menuCoverage']))
+focus=json.loads((O/'focus-board-data.json').read_text(encoding='utf-8'))
+check('five focus actions on independent page without speculative edges',len(focus['graph']['nodes'])==5 and not focus['graph']['edges'])
+check('focus vault HTML equals export',(R/'Sifu/03配置/玩家攻击/招式板/徒手专注.html').read_bytes()==(O/'focus-board.html').read_bytes())
+manifest=json.loads((O/'manifest.json').read_text(encoding='utf-8'))
+check('all build inputs and scripts match manifest',all(hashlib.sha256((R/p).read_bytes()).hexdigest()==h for pairs in [manifest['inputs'],manifest['scripts']] for p,h in pairs.items()))
 check('quadrant enum order confirmed',[d['research']['quadrants'][str(i)] for i in range(4)]==['FrontLeft','FrontRight','BackRight','BackLeft'])
 check('avoid enum bits confirmed',[d['research']['avoidBits'][str(i)] for i in [1,2,4,8]]==['Jump','Duck','SideLeft','SideRight'])
 check('display evidence sources unchanged',all(hashlib.sha256((R/p).read_bytes()).hexdigest()==h for p,h in d['research']['sources'].items()))

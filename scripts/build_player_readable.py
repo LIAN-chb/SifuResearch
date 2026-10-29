@@ -42,6 +42,7 @@ def effect(ps,kind,flag,field):
  s=nested(ps,kind);on=val(s,flag);n=val(s,field)
  return ('开：'+fmt(n)) if on is True else ('未启用（保存 '+fmt(n)+'）' if on is False else '未保存')
 def nav():return wl(BASE+'/阅读入口','玩家攻击阅读入口')+' · '+wl(BASE+'/字段中文说明','字段中文说明')+'\n\n'
+FOCUS_LINK='[在浏览器打开徒手专注（HTML）]('+(V/BASE/'招式板/徒手专注.html').as_uri()+')'
 BOARD_LINK='[在浏览器打开徒手招式图（HTML）]('+(V/BASE/'招式板/徒手招式板.html').as_uri()+')'
 WORDS={'Main':'','Char':'','MainChar':'','MC':'','HB':'命中段','Jab':'刺拳','Hook':'勾拳','Punch':'拳击','Punches':'连续拳','Kick':'踢击','Kicks':'连续踢','Palm':'掌击','Elbow':'肘击','Thrust':'突刺','Throat':'咽喉','Plexus':'躯干','Front':'前向','Back':'后向','High':'高位','Low':'低位','Heavy':'重击','Light':'轻击','Combo':'连招','Finisher':'收尾','Finish':'收尾','Charged':'蓄力','Charge':'蓄力','Sweep':'扫击','Head':'头部','Body':'身体','Ground':'地面','Grounded':'倒地目标','Get':'起身','Up':'向上','Down':'向下','Double':'双段','Triple':'三段','Multi':'多段','Hit':'命中','Hits':'连续命中','Spin':'旋转','Spinning':'旋转','Spinny':'旋转','Side':'侧向','Uppercut':'上勾拳','Reverse':'反向','Belly':'腹部','Shin':'胫部','Foot':'脚部','Crooked':'勾绊','Grab':'抓取','Throw':'投掷','Push':'推击','Pushback':'推退','Knockdown':'击倒','KnockDown':'击倒','KD':'击倒','Dizzy':'眩晕','Post':'后续','Parry':'招架','PostParry':'招架后','Rush':'突进','Engage':'接近','Disengage':'拉开','Delay':'延迟','Attack':'攻击','Attacks':'攻击','Special':'特殊','Skill':'技能','Skills':'技能','Barehands':'徒手','BareHands':'徒手','Bats':'球棒','Bat':'球棒','Staff':'长棍','Blades':'刀刃','Blade':'刀刃','Slash':'斩击','Stroke':'打击','Strike':'打击','Crush':'重砸','Vertical':'垂直','Horizontal':'水平','Wide':'大幅','Fast':'快速','Quick':'快速','Long':'长距离','Straight':'直线','Ribs':'肋部','Rib':'肋部','Hips':'髋部','Hip':'髋部','Knee':'膝击','Flick':'挑击','Mill':'回转','Estoc':'突刺','Poke':'点刺','Pommel':'柄击','Turn':'转身','Dust':'扬尘','Blow':'击打','Slide':'滑步','Sync':'同步','Hold':'按住','Claws':'爪击','Ext':'延伸','End':'结束','Old':'旧版','old':'旧版','Base':'基础','New':'新版','new':'新版'}
 def literal(s):
@@ -202,7 +203,7 @@ for tree in graphs['trees']:
  label=tree_names.get(Path(tree['asset']).stem,Path(tree['asset']).stem);p=BASE+'/输入衔接图-'+label+'.md';graph_paths.append((label,p))
  ns=tree['nodes'];text='# '+label+'：输入关联的招式衔接图\n\n'+nav()+wl(BASE+'/输入与衔接图读法','先看输入和图例说明')+'\n\n中文为内部节点与资源的辅助译名，原名、节点编号和条件均保留。图依据资产保存的连接生成，不把它当成稳定命中保证。来源：'+tree['asset']+'。\n'
  if label=='徒手':
-  text+='\n'+BOARD_LINK+'。单画布以轻重两行为中心，点节点看前后高亮和右侧详情。编辑时一格放一个居中节点，占用格禁止放入、不交换；阅读隐藏格子。当前浏览器自动保存，支持导入／导出及迁移前原布局备份。\n'
+  text+='\n'+FOCUS_LINK+'。\n'+BOARD_LINK+'。单画布以轻重两行为中心，点节点看前后高亮和右侧详情。编辑时一格放一个居中节点，占用格禁止放入、不交换；阅读隐藏格子。当前浏览器自动保存，支持导入／导出及迁移前原布局备份。\n'
   subset={v for k,v in tree['defaults'].items() if k in ['m_DefaultAttacks[0]','m_DefaultAttacks[6]'] and v>=0}
   for depth in range(5):
    more={e['target'] for e in tree['edges'] if e['source'].startswith('N') and int(e['source'][1:]) in subset and e['target']>=0 and e['input'] in ['EComboTransition::Light','EComboTransition::Heavy']}
@@ -235,7 +236,8 @@ for tree in graphs['trees']:
  add(p,text);tree_stats.append({'label':label,'nodes':len(ns),'authored_input_edges':len(tree['edges']),'basic_attack_variants':node_attack_count,'resolved_basic_attack_variants':resolved,'document':p})
 index='# 玩家攻击阅读入口\n\n'+wl('00索引/首页','返回首页')+' · '+wl('03配置/配置索引','返回配置索引')+'\n\n先用带输入的图看衔接，再在同页查节点引用的命中段和伤害。字段均附中文标识，保留原名；中文招式名称当前为辅助直译，不冒充已核对的官方名称。\n'
 index+=wl(BASE+'/招式待核项与已确认信息','朝向、输入和可避方向的查询结果')+'\n\n'
-index+='## 徒手招式图\n\n'+BOARD_LINK+'。单图以连续轻重两行为中心，节点仅用操作称呼；前驱后继相同的配置归并，输入／条件／属性在右侧抽屉分别保留。支持前后高亮、缩放及阅读／编辑切换；布局可拖动、多选对齐／等距、撤销重做，自动保存到当前浏览器并可导出备份。\n\n'+wl(BASE+'/徒手招式板小样','使用说明与覆盖边界')+'：57个保存节点收纳为33个图节点，63条连接与21类默认输入保留。共线只合并视觉显示，不新增招式关系；方向通用接入以用户观察虚线区分。朝向、Alt手势及条件覆写仍待核。\n\n'
+index+=FOCUS_LINK+'：左上角可切换徒手图／专注；'+wl(BASE+'/徒手节点覆盖核对','节点与官方名覆盖核对')+'。\n\n'
+index+='## 徒手招式图\n\n'+BOARD_LINK+'。单图以连续轻重两行为中心，节点仅用操作称呼；前驱后继相同的配置归并，输入／条件／属性在右侧抽屉分别保留。支持前后高亮、缩放及阅读／编辑切换；布局可拖动、多选对齐／等距、撤销重做，自动保存到当前浏览器并可导出备份。\n\n'+wl(BASE+'/徒手招式板小样','使用说明与覆盖边界')+'：57个保存节点收纳为33个连招节点，另补3个独立能力入口；63条源连接与21类默认输入保留。官方名见悬浮气泡，详情保留操作称呼及配置差异；条件替换已解码但不作为默认新增节点。\n\n'
 index+='## 输入关联的衔接图\n'+table(['武器／范围','入口','配置节点','保存输入边'],[[s['label'],wl(s['document'],'打开衔接图与节点伤害'),s['nodes'],s['authored_input_edges']] for s in tree_stats])
 index+='## 查伤害与参数\n'+table(['内容','入口'],[['全部玩家字段中文标识与解释',wl(BASE+'/字段中文说明')],['输入标记、条件、方向与默认回退的读法',wl(BASE+'/输入与衔接图读法')],['全部313条命中段的伤害总表',wl(BASE+'/命中段与伤害总表')]]+[[group+'全部动作到伤害的对照',wl(BASE+'/招式伤害对照-'+group)] for group in groups])
 index+='## 数据范围\n\n5套连招树的126个节点与128条保存输入边均已纳入；255个已解析玩家 AttackDB 和314个玩家命中窗口可从伤害页查找。图中直线不表示敌人无法脱离；技能标签、条件分支、旧资源、未知中文名和未解码覆写均保留提示。本阶段未运行游戏。\n'

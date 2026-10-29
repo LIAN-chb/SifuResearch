@@ -67,3 +67,5 @@ PDB `FComboNode`：m_AttackInfos位于`+0x20`；m_ConditionalAttacks位于`+0x60
 解释器版本和脚本／原输入／资产SHA见结构化证据。类型脚本复用原TPI reader，但仅改目标名字和独立输出路径，不覆盖共享类型清单。曾请求InputBehaviourStruct缺F前缀未找到，按成员真实类型修为FInputBehaviourStruct；另一次Python内联输出括号SyntaxError未写文件。首轮映射检查错误地期待全部21项双向回查，到DodgeAttack的None越界时失败；复查函数分支后区分18有映射和3无逆映射，不把失败掩盖成全通过。
 
 未访问存档、未启动游戏、未重新解包。未改共享模板和知识库页，结果交父任务整合。下一步：解节点44等条件Map；追输入栈siblings消费与Availability；追方向参照和组合条件消费者。当前不需要用户做手动操作。
+
+13批后续修订：用户已授权执行徒手补全和名称标注。57节点条件Map现已精确读取，57条全部为Attack.Modifiers替换配置；具体Tag与四槽资产见exports/20261029-徒手补全与命名-13/conditional-attacks.json和notes/player-completeness-13-conditional.md。此前该部分未解表述保留历史身份，运行期应用及其他未解分支不扩大结论。

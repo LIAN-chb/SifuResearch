@@ -2,8 +2,9 @@
 from pathlib import Path
 import gzip, hashlib, json, collections
 from player_graph_model import build_graph
+from player_graph_catalog import apply_names,hit_window,supplemental_node
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'exports/20261029-玩家招式图-10'
+OUT=ROOT/'exports/20261029-徒手补全与命名-13'
 OUT.mkdir(parents=True,exist_ok=True)
 def read(p):
     if str(p).endswith('.gz'):
@@ -98,16 +99,70 @@ coverage['summary']={'savedNodes':len(tree['nodes']),'displayCards':len(canonica
 data={'nodes':nodes,'groups':groups,'attacks':used_assets,'outsideAttacks':outside_attacks,'candidateCards':candidate_cards,'defaults':defaults,'starts':starts,'source':tree['asset'],'coverage':coverage,'labels':read('exports/player-field-labels.json')}
 data['research']=read('inventory/player-unknown-08-display-evidence.json')
 data['graph']=build_graph(data)
+data['page']='barehands'
+data['legacyNodeIds']=[n['id'] for n in data['graph']['nodes']]
+data['pages']=[{'label':'徒手 · 招式图','file':'徒手招式板.html','page':'barehands'},{'label':'徒手 · 专注','file':'徒手专注.html','page':'focus'}]
+locale=read('exports/20261029-玩家招式名称-12/paired-texts.json')
+apply_names(data,locale)
+supp=read('exports/20261029-徒手补全与命名-13/actions-data.json')
+for i,action in enumerate(supp['supplementaryNodes']):
+    official=[{'name':n,'scope':'动作技能','via':'能力输入入口与游戏本地化'} for n in action['officialNames']]
+    data['graph']['nodes'].append(supplemental_node(1001+i,action['operationLabel'],action,official,150+240*i,1070))
+data['graph']['height']=1190
+conditions=read('exports/20261029-徒手补全与命名-13/conditional-attacks.json')
+data['completeness']={'supplementaryActions':supp,'conditionalSummary':conditions['summary'],'conditionalAssets':conditions['referenced_previous_outside_candidates'],'menuCoverage':[]}
+for row in locale:
+    if row['namespace']!='ST_UI_MenuCombo' or not row['key'].startswith(('Command_','Special_','BaseCombo_')) or any('_'+w+'_' in row['key'] for w in ['Bat','Blade','Staff']):continue
+    matches=[n['id'] for n in data['graph']['nodes'] if any(o.get('key')==row['key'] or row['zh-Hans']==o['name'] for o in n['official'])]
+    assert matches,('uncovered official menu entry',row['key'])
+    data['completeness']['menuCoverage'].append({'key':row['key'],'name':row['zh-Hans'],'nodes':matches,'scope':'menu identity; combo titles are not extra attacks'})
+skillUI=read('exports/20261029-玩家招式名称-12/skill-ui-links.json')
+data['skillNames']={}
+for ui in skillUI['skills']:
+    entry=ui['fields'].get('Name',{})
+    if entry.get('key','').startswith('SkillTitle_Technique_') and '/OLD/' not in ui['asset']:
+        data['skillNames'][entry['key'].replace('SkillTitle_Technique_','').lower()]=entry['zh-Hans']
+focusSource=read('exports/20261029-徒手补全与命名-13/focus-data.json')
+focusData={'page':'focus','pages':data['pages'],'nodes':{},'attacks':{},'outsideAttacks':{},'candidateCards':[],'defaults':[],'starts':[],'source':focusSource['source'],'coverage':coverage,'labels':data['labels'],'research':data['research'],'skillNames':{},'focusSource':focusSource}
+focusNodes=[]
+for i,f in enumerate(focusSource['nodes']):
+    action={**f,'windows':[hit_window(f['hitProperties'],f['hitTable'],f['hitRow'])],'entryText':f['entry'],'kind':'focus'}
+    official=[{'name':f['name'],'en':f['en'],'scope':'专注招式','key':f['nameText']['key'],'namespace':f['nameText']['namespace'],'via':'VitalPointData.m_Name直接文本引用'}]
+    focusNodes.append(supplemental_node(2001+i,f['name'],action,official,390+240*(i%3),350+240*(i//3)))
+focusData['graph']={'width':1180,'height':850,'nodes':focusNodes,'edges':[],'starts':[],'internalEdges':[],'merges':[],'canonicalToDisplay':{},'rawToDisplay':{},'reportedCommonInput':{'targets':[],'provenance':'专注不是普通连招树，后续边尚未接通'}}
+
 template=(ROOT/'scripts/player_graph_template.html').read_text(encoding='utf-8')
 template=template.replace('__EDITOR_JS__',(ROOT/'scripts/player_graph_routing.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/player_graph_cells.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/player_graph_editor.js').read_text(encoding='utf-8'))
 (OUT/'player-board.html').write_text(template.replace('__DATA__',json.dumps(data,ensure_ascii=False).replace('</','<\\/')),encoding='utf-8')
 vault_html=ROOT/'Sifu/03配置/玩家攻击/招式板/徒手招式板.html'
 vault_html.parent.mkdir(parents=True,exist_ok=True)
 vault_html.write_bytes((OUT/'player-board.html').read_bytes())
+focus_html=template.replace('__DATA__',json.dumps(focusData,ensure_ascii=False).replace('</','<\\/'))
+(OUT/'focus-board.html').write_text(focus_html,encoding='utf-8')
+(vault_html.parent/'徒手专注.html').write_text(focus_html,encoding='utf-8')
+(OUT/'徒手招式板.html').write_bytes(vault_html.read_bytes())
+(OUT/'徒手专注.html').write_text(focus_html,encoding='utf-8')
+(OUT/'focus-board-data.json').write_text(json.dumps(focusData,ensure_ascii=False,indent=2),encoding='utf-8')
 (OUT/'board-data.json').write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
 (OUT/'coverage.json').write_text(json.dumps(coverage,ensure_ascii=False,indent=2),encoding='utf-8')
 manifest={'inputs':{p:sha(p) for p in ['inventory/player-combo-graphs.json','inventory/player-combo-type-layouts.json','inventory/tagged-objects.json.gz','inventory/data-tables.json.gz','exports/player-field-labels.json','inventory/player-unknown-08-display-evidence.json']},'scripts':{p:sha(p) for p in ['scripts/build_player_board.py','scripts/player_graph_model.py','scripts/player_graph_template.html','scripts/player_graph_editor.js']},'asset':tree['asset'],'uasset_sha256':tree['uasset_sha256'],'uexp_sha256':tree['uexp_sha256'],'summary':coverage['summary'],'display_graph':{'nodes':len(data['graph']['nodes']),'edges':len(data['graph']['edges']),'merges':data['graph']['merges']},'limits':['static saved tree coverage only','conditional attacks remain opaque','Alt shares short-release gesture with normal input; contextual stack selection applies; quadrant mapping confirmed; attack height classification remains unverified','all saved charge tiers preserved, not inferred final hold times','out-of-tree candidates individually retained; not all classified as playable','common directional entry is user-observed, not a verified all-to-all relation','browser-local layout autosave is not a write to the HTML file; use export/import for backups']}
 manifest['scripts']['scripts/player_graph_routing.js']=sha('scripts/player_graph_routing.js')
 manifest['scripts']['scripts/player_graph_cells.js']=sha('scripts/player_graph_cells.js')
+manifest['scripts']['scripts/player_graph_catalog.py']=sha('scripts/player_graph_catalog.py')
+for source in ['exports/20261029-玩家招式名称-12/paired-texts.json','exports/20261029-玩家招式名称-12/skill-ui-links.json','exports/20261029-徒手补全与命名-13/actions-data.json','exports/20261029-徒手补全与命名-13/focus-data.json','exports/20261029-徒手补全与命名-13/conditional-attacks.json']:manifest['inputs'][source]=sha(source)
+manifest['limits']=[x for x in manifest['limits'] if x!='conditional attacks remain opaque']+['57 conditional entries decoded as modifiers, not default extra nodes','3 ability actions added without invented combo edges','5 barehand focus actions on own page; combo followups not yet recovered']
 (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
 print(json.dumps(coverage['summary'],ensure_ascii=True))
+
+# Human-readable coverage is generated from the same identity mapping as the tooltips.
+by_display={n['id']:n for n in data['graph']['nodes']}
+note='# 徒手节点覆盖核对\n\n[[03配置/玩家攻击/徒手招式板小样|图的使用说明]] · [[03配置/玩家攻击/阅读入口|阅读入口]]\n\n'
+note+='[打开徒手招式图]('+vault_html.as_uri()+') · [打开徒手专注]('+(vault_html.parent/'徒手专注.html').as_uri()+')\n\n'
+note+='13版保留原33个连招位置及全部63条源边，补入抓取后推掷、攻击倒地对手、倒地格挡反击3个独立能力入口，共36节点。独立入口暂未接通与普通节点的具体边，未伪造连线。原布局恢复时保留旧节点格位，新节点补入空格；新增前JSON另存浏览器备份。\n\n'
+note+='名称气泡按下表的官方菜单身份对应；整套连招名有范围说明，不代表其中每击有独立官方名。没有找到独立名的节点明确采用操作称呼。\n\n| 官方菜单名称 | 图中位置／操作称呼 |\n|---|---|\n'
+for r in data['completeness']['menuCoverage']:
+    note+='| '+r['name']+' | '+'、'.join(by_display[i]['label'] for i in r['nodes'])+' |\n'
+note+='\n徒手专注另页包含'+ '、'.join(f['name'] for f in focusSource['nodes'])+'，各自列消耗与覆盖命中表。实际弱点对象的m_Name直接指向FocusNames；不能拿旧技能UI的解除武器名套给戳眼。敌人可覆盖参数，表行不是动画整段最终总效果。专注结束的动作许可／具体跟进尚未恢复，未画推测后续边。\n\n'
+note+='条件Map已对57原节点完全读取，21非空、57条件条目全部为Attack.Modifiers替换设置，引用70动作，其中51来自先前88树外候选。它们留在原节点的替换配置证据，不作默认新增节点。其余37候选含21旧版、10特殊、6常规；六常规在既有tagged属性范围未查到入口，仍留覆盖审计，不因文件存在就加点。\n\n'
+note+='证据底稿：notes/player-completeness-13-conditional.md与notes/player-completeness-13-actions.md；批次数据／验证在exports/20261029-徒手补全与命名-13/。未运行游戏，不宣称完整穷尽所有运行期动作。\n'
+(ROOT/'Sifu/03配置/玩家攻击/徒手节点覆盖核对.md').write_text(note,encoding='utf-8')
