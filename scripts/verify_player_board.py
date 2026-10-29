@@ -2,7 +2,7 @@
 from pathlib import Path
 from urllib.parse import urlparse,unquote
 import json,re,hashlib
-R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-徒手补全与命名-13'
+R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-招式时间轴-14'
 d=json.loads((O/'board-data.json').read_text(encoding='utf-8'))
 t=next(t for t in json.loads((R/'inventory/player-combo-graphs.json').read_text(encoding='utf-8'))['trees'] if t['asset'].endswith('/MainChar_ComboTree.uasset'))
 errors=[];checks=[]
@@ -48,8 +48,11 @@ check('common directional entry keeps user provenance',g['reportedCommonInput'][
 check('drawing model does not invent shared-entry source edges',all('sourceEdgeIndices' in e and all(i in range(len(t['edges'])) for i in e['sourceEdgeIndices']) for e in g['edges']))
 prior=json.loads((R/'exports/20261029-玩家招式图-03/board-data.json').read_text(encoding='utf-8'))
 prior=json.loads(json.dumps(prior,ensure_ascii=False).replace('轻击变体（手势待核）','短按轻击松开·变体').replace('重击变体（手势待核）','短按重击松开·变体'))
-legacy=json.loads(json.dumps({k:v for k,v in d.items() if k not in ['research','page','pages','legacyNodeIds','completeness','skillNames']}))
-for node in legacy['nodes'].values():node.pop('official',None)
+legacy=json.loads(json.dumps({k:v for k,v in d.items() if k not in ['research','page','pages','legacyNodeIds','completeness','skillNames','timelineResearch']}))
+for node in legacy['nodes'].values():
+    node.pop('official',None)
+    node.pop('conditionalVariants',None)
+for a in list(legacy['attacks'].values())+list(legacy['outsideAttacks'].values()):a.pop('timeline',None)
 legacy['graph']['nodes']=[n for n in legacy['graph']['nodes'] if n['id']<1000]
 for node in legacy['graph']['nodes']:node.pop('official',None)
 legacy['graph']['height']=prior['graph']['height']

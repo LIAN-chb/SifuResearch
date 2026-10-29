@@ -45,6 +45,8 @@ DirBackFront是AnalogInputSequenceData，两步；DirFrontFront三步。两者 `
 
 本次没有追完AnalogInputSequenceCondition::UpdateAction与CombinationInputCondition的具体时间消费、参照向量转换、和每一招Availability。因此仍不把“方向招通常任意招后可接”的用户观察提升为逐节点逻辑证明。
 
+2026-10-29修订导航：14批已补17种许可层、OR进入/退出和攻击Ability候选/表序/节点准入链；详见[player-timeline-14-availability](player-timeline-14-availability.md) A14-1至A14-4。旧“尚未追完”缩小到该文具名的激活/打断、输入条件蓝图、context与fallback内部缺口，不再概括为许可选择全未解；方向参照和最终运行时接招仍保留原边界。
+
 ## I04：条件覆写是Tag映射，具体条目仍未解码
 
 PDB `FComboNode`：m_AttackInfos位于`+0x20`；m_ConditionalAttacks位于`+0x60`，类型为`TMap<FGameplayTag,FComboNodeAttackInfos>`，并非独立FConditionalAttack结构。

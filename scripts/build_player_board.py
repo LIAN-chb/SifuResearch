@@ -3,8 +3,9 @@ from pathlib import Path
 import gzip, hashlib, json, collections
 from player_graph_model import build_graph
 from player_graph_catalog import apply_names,hit_window,supplemental_node
+from player_graph_timeline import enrich
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'exports/20261029-徒手补全与命名-13'
+OUT=ROOT/'exports/20261029-招式时间轴-14'
 OUT.mkdir(parents=True,exist_ok=True)
 def read(p):
     if str(p).endswith('.gz'):
@@ -131,7 +132,10 @@ for i,f in enumerate(focusSource['nodes']):
     focusNodes.append(supplemental_node(2001+i,f['name'],action,official,390+240*(i%3),350+240*(i//3)))
 focusData['graph']={'width':1180,'height':850,'nodes':focusNodes,'edges':[],'starts':[],'internalEdges':[],'merges':[],'canonicalToDisplay':{},'rawToDisplay':{},'reportedCommonInput':{'targets':[],'provenance':'专注不是普通连招树，后续边尚未接通'}}
 
+enrich(data,read('exports/20261029-招式时间轴-14/availability-layers.json'),read('exports/20261029-招式时间轴-14/timing-data.json'),conditions)
 template=(ROOT/'scripts/player_graph_template.html').read_text(encoding='utf-8')
+template=template.replace('__TIMELINE_CSS__',(ROOT/'scripts/player_graph_timeline.css').read_text(encoding='utf-8'))
+template=template.replace('__TIMELINE_JS__',(ROOT/'scripts/player_graph_timeline.js').read_text(encoding='utf-8'))
 template=template.replace('__EDITOR_JS__',(ROOT/'scripts/player_graph_routing.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/player_graph_cells.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/player_graph_editor.js').read_text(encoding='utf-8'))
 (OUT/'player-board.html').write_text(template.replace('__DATA__',json.dumps(data,ensure_ascii=False).replace('</','<\\/')),encoding='utf-8')
 vault_html=ROOT/'Sifu/03配置/玩家攻击/招式板/徒手招式板.html'
@@ -149,6 +153,13 @@ manifest={'inputs':{p:sha(p) for p in ['inventory/player-combo-graphs.json','inv
 manifest['scripts']['scripts/player_graph_routing.js']=sha('scripts/player_graph_routing.js')
 manifest['scripts']['scripts/player_graph_cells.js']=sha('scripts/player_graph_cells.js')
 manifest['scripts']['scripts/player_graph_catalog.py']=sha('scripts/player_graph_catalog.py')
+for p in ['scripts/player_graph_timeline.py','scripts/player_graph_timeline.js','scripts/player_graph_timeline.css']:
+    manifest['scripts'][p]=sha(p)
+for p in ['availability-decode.py','timing-extract.py','timing-animation-probe.py']:
+    source='exports/20261029-招式时间轴-14/'+p
+    manifest['scripts'][source]=sha(source)
+for p in ['exports/20261029-招式时间轴-14/availability-layers.json','exports/20261029-招式时间轴-14/timing-data.json']:
+    manifest['inputs'][p]=sha(p)
 for source in ['exports/20261029-玩家招式名称-12/paired-texts.json','exports/20261029-玩家招式名称-12/skill-ui-links.json','exports/20261029-徒手补全与命名-13/actions-data.json','exports/20261029-徒手补全与命名-13/focus-data.json','exports/20261029-徒手补全与命名-13/conditional-attacks.json']:manifest['inputs'][source]=sha(source)
 manifest['limits']=[x for x in manifest['limits'] if x!='conditional attacks remain opaque']+['57 conditional entries decoded as modifiers, not default extra nodes','3 ability actions added without invented combo edges','5 barehand focus actions on own page; combo followups not yet recovered']
 (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -159,6 +170,7 @@ by_display={n['id']:n for n in data['graph']['nodes']}
 note='# 徒手节点覆盖核对\n\n[[03配置/玩家攻击/徒手招式板小样|图的使用说明]] · [[03配置/玩家攻击/阅读入口|阅读入口]]\n\n'
 note+='[打开徒手招式图]('+vault_html.as_uri()+') · [打开徒手专注]('+(vault_html.parent/'徒手专注.html').as_uri()+')\n\n'
 note+='13版保留原33个连招位置及全部63条源边，补入抓取后推掷、攻击倒地对手、倒地格挡反击3个独立能力入口，共36节点。独立入口暂未接通与普通节点的具体边，未伪造连线。原布局恢复时保留旧节点格位，新节点补入空格；新增前JSON另存浏览器备份。\n\n'
+note+='14版在各具体动作详情增加独立动画帧轴、命中段编号、动画标记及玩家操作许可轨道；条件替换动作按标签另列。许可层进入以OR叠加、退出撤销各自句柄；输入选择及最终动作启动仍另受约束，不当成已经实战验证的取消时间。源动画长度与动作实际结束分开记录。\n\n'
 note+='名称气泡按下表的官方菜单身份对应；整套连招名有范围说明，不代表其中每击有独立官方名。没有找到独立名的节点明确采用操作称呼。\n\n| 官方菜单名称 | 图中位置／操作称呼 |\n|---|---|\n'
 for r in data['completeness']['menuCoverage']:
     note+='| '+r['name']+' | '+'、'.join(by_display[i]['label'] for i in r['nodes'])+' |\n'

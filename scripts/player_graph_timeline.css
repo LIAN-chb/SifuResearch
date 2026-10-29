@@ -1,0 +1,14 @@
+.attack-timeline{margin:12px 0 16px;padding:10px;background:#fffef9;border:1px solid #dae2d3;border-radius:7px}
+.timeline-caption{margin:0;font-size:12px;color:#3c5945}.timeline-limit{font-size:11px;color:#6d7765;margin:5px 0;line-height:1.65}
+.timeline-scroll{overflow-x:auto;padding:9px 4px 10px}.timeline-grid{min-width:470px}
+.time-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;align-items:center;min-height:29px;font-size:11px;color:#596c54}
+.time-label{line-height:1.3}.time-track{position:relative;height:23px;border-bottom:1px solid #d9e1d2;background:linear-gradient(90deg,#e4e9de 1px,transparent 1px) 0 0/25% 100%}
+.time-window{position:absolute;top:6px;height:12px;min-width:3px;padding:0;border:1px solid #477655;border-radius:3px;background:#6b9877;transition:transform .12s,filter .12s;transform-origin:center;cursor:help}
+.time-window.permission{background:#88a7cc;border-color:#688ab5}.time-window:hover,.time-window:focus-visible,.time-window.time-active{transform:scaleY(1.65);filter:brightness(.85);z-index:2;outline:2px solid #294d38;outline-offset:2px}
+.time-window.open-end{border-right:0;border-radius:3px 0 0 3px;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,0 100%)}
+.time-window.exclusive-start{border-left-style:dashed}.time-window.exclusive-end{border-right-style:dashed}
+.time-axis{min-height:31px}.time-axis .time-track{background:none;border:0}.time-tick{position:absolute;top:1px;transform:translateX(-50%);white-space:nowrap;font-size:10px}.time-tick.tick-0{transform:none}.time-tick.tick-4{transform:translateX(-100%)}
+.time-marker{position:absolute;top:3px;height:18px;border-left:2px solid #b98c40}.time-marker b{position:absolute;left:4px;top:0;font-size:10px;font-weight:500;color:#946a28}
+#timeline-tooltip{position:fixed;z-index:100;max-width:min(420px,calc(100vw - 16px));max-height:calc(100dvh - 16px);overflow:auto;padding:12px 14px;border:1px solid #96b29a;border-radius:8px;background:#fffef9;box-shadow:0 6px 24px #284b3030;font-size:12px;line-height:1.6;color:#294735;pointer-events:none;overflow-wrap:anywhere}
+#timeline-tooltip[hidden]{display:none}#timeline-tooltip strong{font-size:13px}#timeline-tooltip p{margin:5px 0}#timeline-tooltip ul{margin:4px 0;padding-left:17px}#timeline-tooltip small{display:block;margin-top:8px;padding-top:7px;border-top:1px solid #dce5d6;color:#6b7966;font-size:10px}
+.special-hit{padding:6px 9px;border-left:3px solid #b18b4e;background:#f4eedf;font-size:12px;overflow-wrap:anywhere}
