@@ -18,6 +18,7 @@
 | 用户决定、选择理由、历史关系与复用边界 | [ADR 决策索引](adr/README.md) |
 | 给用户浏览的项目全貌 | [项目工作流与规则](Sifu/项目工作流与规则.md) |
 | 工具适用条件与失败边界 | [工具能力矩阵](notes/tool-capabilities.md) |
+| 执行前如何发现、核实与组合现有能力 | [能力发现与复用](notes/capability-discovery.md) |
 | 实际方法经验与迁移条件 | [方法复盘](notes/retrospectives/README.md) |
 | 本地 Git 范围与批次提交方式 | [版本管理](notes/version-control.md) |
 | 接手、复用、失败记录、结论修订与验证流程 | [研究续接流程](notes/research-workflow.md) |
