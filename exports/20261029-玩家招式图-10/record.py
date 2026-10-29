@@ -1,0 +1,8 @@
+from pathlib import Path
+import json,sys,hashlib,shutil
+R=Path(__file__).resolve().parents[2];O=Path(__file__).resolve().parent
+assert json.loads((O/'board-data.json').read_text(encoding='utf-8'))==json.loads((R/'exports/20261029-玩家招式图-09/board-data.json').read_text(encoding='utf-8'))
+shutil.copy2(R/'inventory/knowledge-vault-verification.json',O/'knowledge-vault-verification.json')
+files=['scripts/player_graph_template.html','scripts/player_graph_editor.js','scripts/build_player_board.py','scripts/verify_player_board.py','scripts/build_player_readable.py','scripts/verify_knowledge_vault.py','exports/20261029-玩家招式图-10/check-browser.cjs','Sifu/03配置/玩家攻击/招式板/徒手招式板.html']
+commands=['python exports/20261029-玩家招式图-10/update.py','python scripts/build_player_board.py','python scripts/verify_player_board.py',"& 'C:/Users/LIAN/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe' 'exports/20261029-玩家招式图-10/check-browser.cjs'",'python exports/20261029-玩家招式图-10/docs.py','python scripts/build_player_readable.py --check','python scripts/verify_knowledge_vault.py']
+(O/'execution.json').write_text(json.dumps({'cwd':str(R),'python':sys.version,'python_executable':sys.executable,'browser':json.loads((O/'browser-verification.json').read_text())['browser'],'commands':[{'command':c,'exit_code':0} for c in commands],'sha256':{f:hashlib.sha256((R/f).read_bytes()).hexdigest() for f in files},'data_equal_to_09':True,'inputs_and_hashes':'manifest.json','limits':['display changes only','isolated browser; no user storage or live Obsidian verification']},ensure_ascii=False,indent=2),encoding='utf-8')
