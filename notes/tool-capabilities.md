@@ -12,6 +12,7 @@
 | VS dumpbin；`scripts/disassemble_research.py` | 本地 VS 路径、PDB函数边界、匹配EXE | `inventory/*disassembly.json` 留构建哈希、过程范围、输出哈希 | 当前源码路径含 MSVC 14.51.36231；不是本次运行版本探测。跳转表／填充可能被当指令；静态可达不等于实际执行 | 检查工具路径与版本、EXE哈希、函数范围；按问题指定 group 和 name |
 | 知识库检查器 `scripts/verify_knowledge_vault.py` | 布局清单、知识库、静态证据和本机EXE | 历史报告 `inventory/knowledge-vault-verification.json`；本批会重新检查 | 验证链接、清单、语法及已覆盖哈希；不证明机制、图形渲染或实战正确 | 看覆盖范围，保留旧报告，再运行；不为无关管理文档例行重跑 |
 | Git 2.49.0.windows.1 | 本地文本、脚本、选定清单；本批实测版本 | 本批初始化、基线提交和状态核查见交接及报告 | Git只保存纳入提交的内容；不是原始资产备份，当前无远程备份 | 用 status／diff 查看范围，逐路径提交；检查 ignore 是否遗漏需保存的源文件 |
+| 名称12批有界LocRes/FText读取器；exports/20261029-玩家招式名称-12/read-localization.py与read-skill-ui.py | 官方en/zh-Hans locres、既有UE包元数据和技能UI原件 | 本批v3两文件完全消费；2648同键同源hash配对；28UI对象81条文本引用接通 | 仅观察到的格式；不同语言键集合不必相等，英文独有42项；名称存在不证明当前可用 | 核版本、字符串池和索引边界、source hash；Name/Description/Inputs同对象核对；见复盘0002 |
 
 ## 维护规则
 
