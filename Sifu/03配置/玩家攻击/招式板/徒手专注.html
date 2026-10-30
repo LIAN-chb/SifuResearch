@@ -9,7 +9,8 @@
 .time-label{line-height:1.3}.time-track{position:relative;height:23px;border-bottom:1px solid #d9e1d2;background:linear-gradient(90deg,#e4e9de 1px,transparent 1px) 0 0/25% 100%}
 .time-window{position:absolute;top:6px;height:12px;min-width:3px;padding:0;border:1px solid #477655;border-radius:3px;background:#6b9877;transition:transform .12s,filter .12s;transform-origin:center;cursor:help}
 .time-window.permission{background:#88a7cc;border-color:#688ab5}.time-window:hover,.time-window:focus-visible,.time-window.time-active{transform:scaleY(1.65);filter:brightness(.85);z-index:2;outline:2px solid #294d38;outline-offset:2px}
-.time-window.open-end{border-right:0;border-radius:3px 0 0 3px;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,0 100%)}
+.time-window.time-point{top:0;height:24px;min-width:20px;background:none;border:0;color:#547da7;font-size:22px;font-weight:700;line-height:18px;text-align:center;border-radius:3px}
+.time-window.buildup{background:#ead6aa;border-color:#c9ab6a}
 .time-window.exclusive-start{border-left-style:dashed}.time-window.exclusive-end{border-right-style:dashed}
 .time-axis{min-height:31px}.time-axis .time-track{background:none;border:0}.time-tick{position:absolute;top:1px;transform:translateX(-50%);white-space:nowrap;font-size:10px}.time-tick.tick-0{transform:none}.time-tick.tick-4{transform:translateX(-100%)}
 .time-marker{position:absolute;top:3px;height:18px;border-left:2px solid #b98c40}.time-marker b{position:absolute;left:4px;top:0;font-size:10px;font-weight:500;color:#946a28}
@@ -64,53 +65,69 @@ function orientation(slots){const names=(slots||[]).map(i=>DATA.research.quadran
 function avoidDirections(w){const mask=w.raw['m_iAvoidableDefenseMatrix[0]'];if(!Number.isInteger(mask))return '未保存';const labels={Jump:'跳避',Duck:'下潜',SideLeft:'左侧闪',SideRight:'右侧闪'},known=Object.entries(DATA.research.avoidBits).filter(([v])=>Number(v)>0),parts=known.filter(([v])=>mask&Number(v)).map(([,n])=>labels[n]||n),bits=known.reduce((a,[v])=>a|Number(v),0);if(mask&~bits)parts.push('未知位 '+(mask&~bits));return parts.join('／')||'无这些方向';}
 function avoidSummary(ws){const dirs=[...new Set(ws.map(avoidDirections))];return dirs.length===1?'可避配置：'+dirs[0]:dirs.length?'各段可避方向不同':'无命中段';}
 function nodeOrientation(n){if(n.action)return n.action.kind==='focus'?'徒手专注':'独立动作入口';return [...new Set(n.configs.flatMap(k=>DATA.nodes[k].variants.map(v=>orientation(v.slots))))].join('／')||'朝向未接通';}
-// Each variant supplies its own action and source node. Only tracks inside that
-// variant share coordinates. DOM strings are escaped at the point of rendering.
+// Display only saved attack successors; collapse operations sharing coordinates.
 function rangeText(r){
- const b=(x,lower)=>x.type==='open'?(lower?'无有限下界':'无有限上界'):num(x.value)+'帧（'+(x.type==='inclusive'?'含':'不含')+'端点）';
- return b(r.start,true)+' → '+b(r.end,false);
+ const lo=r.start.value,hi=r.end.value;
+ if(hi===null)return (lo===null?'…':num(lo)+'帧起…')+(r.start.type==='exclusive'?'（不含起点）':'');
+ return (lo===null?'…':num(lo))+'–'+num(hi)+'帧'+(r.start.type==='exclusive'?'（不含起点）':'')+(r.end.type==='exclusive'?'（不含终点）':'');
 }
 function timelineSuccessors(row,config){
  if(config===null||config===undefined||!row.transition)return [];
  return DATA.nodes[config].edges.filter(e=>e.rawInput.split('::').at(-1)===row.transition&&e.target!==null).map(e=>{
   const display=G.canonicalToDisplay[e.target],node=byId.get(display);
   return {id:display,sourceConfig:config,targetConfig:e.target,edge:e.index,
-   text:(node?.label||DATA.nodes[e.target].name)+'（图节点 '+display+'，配置 '+e.target+'）',
-   condition:e.conditional?'另需分支条件 '+e.key:'无额外保存分支条件',
+   text:node?.label||DATA.nodes[e.target].name,
+   condition:e.conditional?'需满足该衔接分支条件':'',
    probability:e.probability};
  });
 }
+function timelineWindows(a,config){
+ const groups=new Map(),general=new Set(['Dodge','Avoid','Guard','Parry','MoveInterrupt']);
+ for(const r of a.timeline.permissions){
+  const successors=timelineSuccessors(r,config);
+  if(!successors.length&&!general.has(r.action))continue;
+  const key=JSON.stringify([r.start,r.end,r.hitConditions]);
+  if(!groups.has(key))groups.set(key,{start:r.start,end:r.end,hitConditions:r.hitConditions,operations:[]});
+  groups.get(key).operations.push({action:r.action,label:r.label,successors});
+ }
+ return [...groups.values()].sort((a,b)=>(a.start.value??-Infinity)-(b.start.value??-Infinity));
+}
 function timelineTip(row,kind,a,v,config){
- const r=a.timeline, next=kind==='permission'?timelineSuccessors(row,config):[];
- const condition=kind==='permission'?(row.hitConditions===31?'命中结果条件：覆盖代码全部5个分支。':'命中结果条件掩码 '+row.hitConditions+'：具体分支符号尚未恢复。'):'命中段按下方同号属性读取；激活条件保留在来源详情。';
- return {title:kind==='hit'?'攻击判定 · 段'+row.segment:row.label+' · 攻击订单许可',
-  range:rangeText(row),context:orientation(v.slots)+' · '+v.tier+(v.conditionTag?' · 条件 '+v.conditionTag:''),
-  condition,successors:next,
-  note:kind==='permission'?(next.length?'后继是当前配置保存的衔接目标；实际选择仍受输入栈、技能与启动条件约束。':row.transition?'此输入在当前配置没有已保存后继；默认入口及其他系统路径未由此轴证明。':'此操作未通过通用连招映射接通后继，不能据此推定目标招式。'):row.specialAction?'含特殊命中启动器配置；不等于必然触发。':'',
-  sources:kind==='hit'?['命中表行：'+row.row]:(row.sources||[]).map(s=>'原窗口'+(s.index+1)+' · '+rangeText(s.range)),
-  boundary:row.end.type==='open'?'右侧箭头表示没有保存有限上界；绘图区右端不是动作结束。':''};
+ const operations=kind==='permission'?(row.operations||[{action:row.action,label:row.label,successors:timelineSuccessors(row,config)}]):[];
+ const successors=operations.flatMap(o=>o.successors.map(n=>({...n,input:o.label})));
+ const general=operations.filter(o=>!o.successors.length).map(o=>o.label);
+ return {kind,title:kind==='buildup'?'动画前摇':kind==='hit'?'攻击判定 · 段'+row.segment:successors.length?(general.length?'衔接／取消窗口':'衔接窗口'):'操作取消窗口',
+  range:rangeText(row),context:orientation(v.slots)+' · '+v.tier+(v.conditionTag?' · '+v.conditionTag:''),
+  condition:kind==='permission'&&row.hitConditions!==31?'另需满足该窗口的命中结果条件':'',
+  successors,operations:general,
+  note:kind==='buildup'?'期望前摇：'+num(a.buildup)+'帧（播放控制目标）。':kind==='hit'&&row.specialAction?'此段配置有特殊命中动作。':''};
 }
 function timeline(a,v,config){
- const t=a.timeline;if(!t)return '<p class="notice">此动作尚无可定位的动画时间轴证据。</p>';
- const span=t.viewEnd-t.viewStart,pct=x=>Math.max(0,Math.min(100,(x-t.viewStart)/span*100));
+ const t=a.timeline;if(!t)return '';
+ const permissions=timelineWindows(a,config),buildup=t.timing.lastBuildupFrame;
+ const finite=[0,...t.hits.flatMap(r=>[r.start.value,r.end.value]),...permissions.flatMap(r=>[r.start.value,r.end.value]),buildup].filter(Number.isFinite);
+ const left=Math.min(...finite),right=Math.max(1,...finite)*1.08,span=right-left,pct=x=>Math.max(0,Math.min(100,(x-left)/span*100));
  const rows=[];
  for(const r of t.hits)rows.push({r,kind:'hit',label:'攻击判定 · 段'+r.segment});
- for(const r of t.permissions)rows.push({r,kind:'permission',label:r.label});
+ for(const r of permissions)rows.push({r,kind:'permission',label:timelineTip(r,'permission',a,v,config).title.replace('窗口','')});
  const track=({r,kind,label})=>{
-  const start=r.start.value===null?t.viewStart:r.start.value,end=r.end.value===null?t.viewEnd:r.end.value;
+  const start=r.start.value??left,end=r.end.value,open=end===null;
   const tip=timelineTip(r,kind,a,v,config),key=JSON.stringify(tip);
-  return '<div class="time-row"><span class="time-label">'+esc(label)+'</span><div class="time-track"><button type="button" class="time-window '+kind+(r.end.type==='open'?' open-end':'')+(r.start.type==='exclusive'?' exclusive-start':'')+(r.end.type==='exclusive'?' exclusive-end':'')+'" data-timeline-tip="'+esc(key)+'" data-start="'+esc(start)+'" data-end="'+esc(r.end.value??'open')+'" aria-label="'+esc(tip.title+'；'+tip.range)+'" style="left:'+pct(start)+'%;width:'+Math.max(.35,pct(end)-pct(start))+'%"></button></div></div>';
+  const position=open?'left:clamp(0px,calc('+pct(start)+'% - 10px),calc(100% - 20px));width:20px':'left:'+pct(start)+'%;width:'+Math.max(.35,pct(end)-pct(start))+'%';
+  return '<div class="time-row"><span class="time-label">'+esc(label)+'</span><div class="time-track"><button type="button" class="time-window '+kind+(kind==='buildup'?' buildup-band':'')+(open?' time-point':'')+'" data-timeline-tip="'+esc(key)+'" data-start="'+esc(start)+'" data-end="'+esc(end??'open')+'" aria-label="'+esc(tip.title+'；'+tip.range)+'" style="'+position+'">'+(open?'…':'')+'</button></div></div>';
  };
- const markerRows=t.markers.map(m=>'<div class="time-row"><span class="time-label">'+esc(m.label)+'</span><div class="time-track marker-track"><span class="time-marker" style="left:'+pct(m.frame)+'%"><b>'+num(m.frame)+'</b></span></div></div>').join('');
- const ticks=[t.viewStart,...[.25,.5,.75].map(f=>t.viewStart+span*f),t.viewEnd];
- return '<section class="attack-timeline" data-timeline-asset="'+esc(a.asset)+'" aria-label="'+esc(v.tier+'独立动作时间轴')+'"><p class="timeline-caption">动画帧 · 绿色为攻击判定，蓝色为当前攻击订单许可。悬停或按Tab聚焦查看详情。</p><p class="timeline-limit">'+esc(t.rule)+' '+esc(t.missing)+'</p><div class="timeline-scroll"><div class="timeline-grid">'+markerRows+rows.map(track).join('')+'<div class="time-row time-axis"><span>动画帧坐标</span><div class="time-track">'+ticks.map((x,i)=>'<span class="time-tick tick-'+i+'" style="left:'+pct(x)+'%">'+num(Number(x.toFixed(1)))+'</span>').join('')+'</div></div></div></div><p class="timeline-limit">'+(t.animationEnd===null?'动作实际结束帧尚未恢复；右端仅为显示范围。':'动作结束帧：'+num(t.animationEnd)+'；窗口有效期仍受订单生命周期管理。')+(t.timing.sourceAnimation?' 已核源动画 '+num(t.timing.sourceAnimation.numFrames)+' 帧（约 '+num(t.timing.sourceAnimation.sequenceLengthSeconds)+' 秒），未当作当前动作结束。':'')+' 前摇配置 '+num(a.buildup)+' 帧是播放控制参数；不等于按键到命中的实测帧数。无有限上界的窗口用箭头延续。</p>'+(t.unresolved.length?'<p class="notice">'+t.unresolved.length+'条窗口的坐标或许可尚未接通，见来源详情。</p>':'')+'</section>';
+ const buildupRange={start:{value:0,type:'inclusive'},end:{value:buildup,type:'inclusive'}};
+ const buildupRow=Number.isFinite(buildup)?track({r:buildupRange,kind:'buildup',label:'动画前摇 0–'+num(buildup)}):'';
+ const ticks=[left,...[.25,.5,.75].map(f=>left+span*f),right];
+ return '<section class="attack-timeline" data-timeline-asset="'+esc(a.asset)+'" aria-label="'+esc(v.tier+'独立动作时间轴')+'"><p class="timeline-caption">'+(Number.isFinite(buildup)?'动画前摇到 '+num(buildup)+' 帧；':'动画前摇末帧未保存；')+'期望前摇 '+num(a.buildup)+' 帧（播放控制目标）。</p><div class="timeline-scroll"><div class="timeline-grid">'+buildupRow+rows.map(track).join('')+'<div class="time-row time-axis"><span>动画帧</span><div class="time-track">'+ticks.map((x,i)=>'<span class="time-tick tick-'+i+'" style="left:'+pct(x)+'%">'+num(Number(x.toFixed(1)))+'</span>').join('')+'</div></div></div></div><p class="timeline-limit">绿色：攻击判定　蓝色：衔接／取消许可　…：该帧起无上界。许可配置未实测，右端不是动作结束。</p></section>';
 }
 const timelineTooltip=document.createElement('div');timelineTooltip.id='timeline-tooltip';timelineTooltip.role='tooltip';timelineTooltip.hidden=true;document.body.append(timelineTooltip);
 let activeTimeWindow=null;
 function hideTimelineTooltip(){if(activeTimeWindow){activeTimeWindow.removeAttribute('aria-describedby');activeTimeWindow.classList.remove('time-active');}activeTimeWindow=null;timelineTooltip.hidden=true;}
 function showTimelineTooltip(target,event){
  const tip=JSON.parse(target.dataset.timelineTip);hideTooltip();hideTimelineTooltip();activeTimeWindow=target;target.classList.add('time-active');target.setAttribute('aria-describedby','timeline-tooltip');
- timelineTooltip.innerHTML='<strong>'+esc(tip.title)+'</strong><p>'+esc(tip.range)+'</p><p>'+esc(tip.context)+'</p><p>'+esc(tip.condition)+'</p>'+(tip.successors.length?'<p>保存后继：</p><ul>'+tip.successors.map(n=>'<li>'+esc(n.text)+'；'+esc(n.condition)+(n.probability!==100?'；选择权重 '+num(n.probability):'')+'</li>').join(''):'')+(tip.note?'<p>'+esc(tip.note)+'</p>':'')+(tip.boundary?'<p>'+esc(tip.boundary)+'</p>':'')+'<small>'+tip.sources.map(esc).join('<br>')+'</small>';
+ const seen=new Set(),successors=tip.successors.filter(n=>{const key=n.input+'|'+n.text+'|'+n.condition;if(seen.has(key))return false;seen.add(key);return true;});
+ timelineTooltip.innerHTML='<strong>'+esc(tip.title)+' · '+esc(tip.range)+'</strong>'+(successors.length?'<ul>'+successors.map(n=>'<li>'+esc(n.input)+' → '+esc(n.text)+(n.condition?'（'+esc(n.condition)+'）':'')+'</li>').join(''):'')+(tip.operations?.length?'<p>'+esc(tip.operations.join('、'))+'</p>':'')+(tip.condition?'<p>'+esc(tip.condition)+'</p>':'')+(tip.note?'<p>'+esc(tip.note)+'</p>':'');
  timelineTooltip.hidden=false;
  const box=target.getBoundingClientRect(),size=timelineTooltip.getBoundingClientRect(),x=event?.clientX??box.left+box.width/2,y=event?.clientY??box.bottom;
  timelineTooltip.style.left=Math.max(8,Math.min(innerWidth-size.width-8,x+12))+'px';
@@ -123,7 +140,7 @@ document.addEventListener('focusout',e=>{if(e.target.closest('[data-timeline-tip
 document.addEventListener('scroll',hideTimelineTooltip,true);window.addEventListener('resize',hideTimelineTooltip);window.addEventListener('blur',hideTimelineTooltip);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideTimelineTooltip();});
 
-function variant(v,i,name='招式配置',config=null){const a=DATA.attacks[v.asset]||DATA.outsideAttacks[v.asset],ws=a.windows;return '<div class="variant"><h4>'+esc(name)+'（'+esc(orientation(v.slots))+'；'+esc(avoidSummary(ws))+'）</h4><p class="muted variant-kind">'+esc(v.tier)+' · 姿态变体'+(i+1)+'</p><p class="muted timing">前摇配置：'+num(a.buildup)+' 帧（实际起手待核）</p><p class="muted distance">距离参数：'+num(a.range)+'</p>'+timeline(a,v,config)+'<div class="scroll">'+table(['命中段','生命','架势','受击硬直配置帧','格挡架势','弹开架势'],ws.map((w,j)=>[j+1,met(w.damage),met(w.structure),met(w.stun),met(w.guard),met(w.deflect)]))+'</div>'+ws.map((w,j)=>(w.action?'<p class="special-hit">段'+(j+1)+'特殊命中动作配置：'+esc(w.action.split('/').at(-1))+'。保存了启动器引用，具体触发条件尚未核实。</p>':'')+'<p class="muted avoid-directions">段'+(j+1)+'可避方向（配置）：'+esc(avoidDirections(w))+'</p><div class="hit-properties"><p>段'+(j+1)+'：'+esc(lvl(w))+'；攻击强度 '+power(w.power)+'；韧性比较覆盖 '+met(w.resilience)+'；</p><p>可招架字段 '+bool(w.parriable)+'；推距 '+met(w.push)+'。</p></div>').join('')+'<details><summary>来源与完整字段</summary><div class="evidence"><p>'+esc(v.asset)+'；姿态槽 '+esc(v.slots.join('、')||'树外候选')+'</p>'+ws.map(w=>'<p>'+esc(w.table)+'／'+esc(w.row)+'</p>'+raw(w.raw)).join('')+raw(a.raw)+'<h4>时间轴证据与范围</h4><pre>'+esc(JSON.stringify(a.timeline,null,2))+'</pre></div></details></div>';}
+function variant(v,i,name='招式配置',config=null){const a=DATA.attacks[v.asset]||DATA.outsideAttacks[v.asset],ws=a.windows;return '<div class="variant"><h4>'+esc(name)+'（'+esc(orientation(v.slots))+'；'+esc(avoidSummary(ws))+'）</h4><p class="muted variant-kind">'+esc(v.tier)+' · 姿态变体'+(i+1)+'</p><p class="muted distance">距离参数：'+num(a.range)+'</p>'+timeline(a,v,config)+'<div class="scroll">'+table(['命中段','生命','架势','受击硬直配置帧','格挡架势','弹开架势'],ws.map((w,j)=>[j+1,met(w.damage),met(w.structure),met(w.stun),met(w.guard),met(w.deflect)]))+'</div>'+ws.map((w,j)=>(w.action?'<p class="special-hit">段'+(j+1)+'特殊命中动作配置：'+esc(w.action.split('/').at(-1))+'。保存了启动器引用，具体触发条件尚未核实。</p>':'')+'<p class="muted avoid-directions">段'+(j+1)+'可避方向（配置）：'+esc(avoidDirections(w))+'</p><div class="hit-properties"><p>段'+(j+1)+'：'+esc(lvl(w))+'；攻击强度 '+power(w.power)+'；韧性比较覆盖 '+met(w.resilience)+'；</p><p>可招架字段 '+bool(w.parriable)+'；推距 '+met(w.push)+'。</p></div>').join('')+'<details><summary>来源与完整字段</summary><div class="evidence"><p>'+esc(v.asset)+'；姿态槽 '+esc(v.slots.join('、')||'树外候选')+'</p>'+ws.map(w=>'<p>'+esc(w.table)+'／'+esc(w.row)+'</p>'+raw(w.raw)).join('')+raw(a.raw)+'<h4>时间轴证据与范围</h4><pre>'+esc(JSON.stringify(a.timeline,null,2))+'</pre></div></details></div>';}
 function relation(e,dir){const other=dir==='prev'?e.source:e.target,n=byId.get(other);return '<button class="relation '+dir+'" data-jump="'+other+'">'+esc(n?.label||'无保存目标')+e.variants.map(v=>'<small>'+esc(v.input)+(v.conditional?' · 有条件，分支 '+esc(v.key):'')+(v.probability!==100?' · 选择权重 '+num(v.probability):'')+'<br>原配置：'+esc(DATA.nodes[v.sourceConfig].name)+' → '+esc(DATA.nodes[v.rawTarget]?.name||'无目标')+'</small>').join('')+'</button>';}
 function openDrawer(title,subtitle,content){hideTimelineTooltip();setHelp(false);document.getElementById('drawer-title').textContent=title+(selected!==null&&title===byId.get(selected)?.label?'（'+nodeOrientation(byId.get(selected))+'）':'');document.getElementById('drawer-subtitle').textContent=subtitle;if(selected!==null&&title===byId.get(selected)?.label){const rows=G.starts.filter(e=>e.displayTarget===selected).map(e=>[esc(e.input),esc(DATA.nodes[e.target]?.name),e.condition?.reference?'有条件，分支键 '+esc(e.key):'无额外保存条件']);for(const e of G.internalEdges.filter(e=>e.display===selected))rows.push([esc(e.input),esc(DATA.nodes[e.rawTarget]?.name),'入口选择权重字段 '+num(e.probability)]);if(rows.length)content+='<h3>输入／入口选择与原配置对应</h3>'+table(['输入','对应配置','条件／权重'],rows);}body.innerHTML=content;body.scrollTop=0;drawer.classList.add('open');drawer.removeAttribute('inert');drawer.setAttribute('aria-hidden','false');body.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>select(Number(b.dataset.jump)));}
 function openAction(n){const a=n.action,ws=a.windows||[];let content='<h3>招式属性</h3>'+officialHtml(n.official);if(a.kind==='focus'){content+='<p class="focus-cost">专注消耗：'+esc(num(a.cost))+' 格（配置）</p><p>'+esc(a.entryText)+'</p><p class="muted">以下是专注覆盖命中表配置，敌人具体弱点可覆写；不是整段同步动画最终总伤害。</p><div class="scroll">'+table(['命中段','生命','架势','受击硬直配置帧','格挡架势','弹开架势'],ws.map((w,j)=>[j+1,met(w.damage),met(w.structure),met(w.stun),met(w.guard),met(w.deflect)]))+'</div>'+ws.map((w,j)=>'<div class="hit-properties"><p>段'+(j+1)+'：'+esc(lvl(w))+'；攻击强度 '+power(w.power)+'；韧性比较覆盖 '+met(w.resilience)+'；</p><p>可招架字段 '+bool(w.parriable)+'；推距 '+met(w.push)+'。</p></div>').join('')+'<h3>后续衔接</h3><p>不属于普通连招树；专注结束后的动作许可与具体接招尚未接通。没有据此画连线，也不代表没有后续。</p>';}

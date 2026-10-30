@@ -1,6 +1,6 @@
 // Pure rendering and event tests with a DOM stub, not a browser substitute.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'exports','20261029-招式时间轴-14');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'exports','20261029-时间轴精简-15');
 const data=JSON.parse(fs.readFileSync(path.join(out,'board-data.json'),'utf8'));
 const template=fs.readFileSync(path.join(root,'scripts/player_graph_template.html'),'utf8');
 const source=fs.readFileSync(path.join(root,'scripts/player_graph_timeline.js'),'utf8');
@@ -27,7 +27,11 @@ for(const n of Object.values(data.nodes)){
   const html=context.variant(v,i,n.name,n.id),a=allAttacks[v.asset];variants++;
   check('one independent axis '+n.id+':'+i,(html.match(/data-timeline-asset=/g)||[]).length===1&&html.includes('data-timeline-asset="'+v.asset+'"'));
   const tips=[...html.matchAll(/data-timeline-tip="([^"]+)"/g)].map(m=>JSON.parse(decode(m[1])));buttons+=tips.length;
-  check('every hit and permission renders '+n.id+':'+i,tips.length===a.timeline.hits.length+a.timeline.permissions.length);
+  check('every hit remains visible '+n.id+':'+i,tips.filter(t=>t.kind==='hit').length===a.timeline.hits.length);
+  const permissionTips=tips.filter(t=>t.kind==='permission');
+  check('same interval appears only once '+n.id+':'+i,new Set(permissionTips.map(t=>t.range+'|'+t.condition)).size===permissionTips.length);
+  check('only mapped attacks and core nonattack controls shown '+n.id+':'+i,permissionTips.every(t=>t.successors.length||t.operations.length));
+  check('no internal hit reference on main timeline '+n.id+':'+i,!context.timeline(a,v,n.id).includes('动画命中标记'));
   for(const tip of tips){
    check('tip keeps current tier and tag '+n.id+':'+i,tip.context.includes(v.tier)&&(!v.conditionTag||tip.context.includes(v.conditionTag)));
    check('successors belong to current config '+n.id+':'+i,tip.successors.every(e=>e.sourceConfig===n.id&&n.edges.some(r=>r.index===e.edge&&r.target===e.targetConfig)));
@@ -37,6 +41,17 @@ for(const n of Object.values(data.nodes)){
 }
 const jab=Object.values(data.attacks).find(a=>a.asset.endsWith('/MainChar_Jab_FR.uasset'));
 const v=data.nodes['44'].variants.find(v=>v.asset===jab.asset),row=jab.timeline.permissions.find(r=>r.action==='AttackLight');
+const jabHTML=context.timeline(jab,v,44);
+const jabTips=[...jabHTML.matchAll(/data-timeline-tip="([^"]+)"/g)].map(m=>JSON.parse(decode(m[1])));
+const permissionTips=jabTips.filter(t=>t.kind==='permission');
+check('regression same interval does not repeat once per operation',new Set(permissionTips.map(t=>t.range+'|'+t.condition)).size===permissionTips.length);
+check('regression open end uses punctuation rather than filled bar',!jabHTML.includes('class="time-window permission open-end'));
+check('regression actual animation buildup is a band',jabHTML.includes('buildup-band'));
+check('regression internal hit reference is not a main track',!jabHTML.includes('动画命中标记'));
+check('jab collapses to two combined permission windows',permissionTips.length===2);
+check('jab buildup relates animation13 to wanted8',jabHTML.includes('动画前摇 0–13')&&jabHTML.includes('期望前摇 8 帧'));
+check('jab unrelated direction and charge attacks not listed',!JSON.stringify(permissionTips).includes('蓄力重击')&&!JSON.stringify(permissionTips).includes('前前轻击'));
+check('open windows only have fixed-width punctuation buttons',[...jabHTML.matchAll(/<button[^>]+data-end="open"[^>]*>(.*?)<\/button>/g)].every(m=>m[0].includes('width:20px')&&m[1]==='…'));
 const tip=context.timelineTip(row,'permission',jab,v,44);
 check('jab light tooltip points to saved node45',tip.successors.some(e=>e.targetConfig===45));
 check('unmapped guard attack has no invented successor',context.timelineSuccessors({transition:null},44).length===0);
@@ -45,6 +60,7 @@ const target=element();target.dataset.timelineTip=JSON.stringify(tip);target.clo
 for(const fn of handlers.focusin)fn({target});
 const tooltip=vm.runInContext('timelineTooltip',context);
 check('keyboard focus opens tooltip',!tooltip.hidden&&target.attrs['aria-describedby']==='timeline-tooltip');
+check('tooltip excludes config IDs, masks and source logs',!/图节点|配置 \d|原窗口|覆盖代码|选择权重|无额外保存/.test(tooltip.innerHTML));
 check('390px placement arithmetic stays within stub viewport',parseFloat(tooltip.style.left)>=8&&parseFloat(tooltip.style.left)+360<=390-8&&parseFloat(tooltip.style.top)>=8);
 for(const fn of handlers.scroll)fn({});check('scroll dismisses stale tooltip',tooltip.hidden&&!target.attrs['aria-describedby']);
 for(const fn of handlers.pointerover)fn({target,pointerType:'mouse',clientX:385,clientY:730});check('mouse pointer opens tooltip',!tooltip.hidden);

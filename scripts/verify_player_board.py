@@ -2,7 +2,7 @@
 from pathlib import Path
 from urllib.parse import urlparse,unquote
 import json,re,hashlib
-R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-招式时间轴-14'
+R=Path(__file__).resolve().parents[1];O=R/'exports/20261029-时间轴精简-15'
 d=json.loads((O/'board-data.json').read_text(encoding='utf-8'))
 t=next(t for t in json.loads((R/'inventory/player-combo-graphs.json').read_text(encoding='utf-8'))['trees'] if t['asset'].endswith('/MainChar_ComboTree.uasset'))
 errors=[];checks=[]

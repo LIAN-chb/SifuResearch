@@ -8,10 +8,10 @@ import json
 from player_graph_timeline import bound, frame_range, merge_intervals, OPERATIONS
 
 R = Path(__file__).resolve().parents[1]
-O = R/'exports/20261029-招式时间轴-14'
+O = R/'exports/20261029-时间轴精简-15'
 read = lambda p: json.loads(p.read_text(encoding='utf-8'))
 d = read(O/'board-data.json')
-layers = read(O/'availability-layers.json')
+layers = read(R/'exports/20261029-招式时间轴-14/availability-layers.json')
 conditions = read(R/'exports/20261029-徒手补全与命名-13/conditional-attacks.json')
 checks = []
 
