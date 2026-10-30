@@ -10,6 +10,8 @@
 
 ## T1：动画坐标与表标记可直接展示
 
+2026-10-30修订入口：16批`notes/player-timing-16-buildup.md`与`notes/player-timing-16-hitclock.md`已接通Wanted/LastBuildup分段变速与HitFrame空间取样用途。下文T2/T2a的未知和“追helper+154（order+314）”是旧停止位置，已由新证据取代：GetInitialPlayRate的this为接口子对象+1B0，实际字段是完整order+4C4，不是helper+154。原日志保留；当前解释见知识库《招式时序字段与播放机制》。
+
 动作AttackDB的 `m_fAnimFrameRate[0]`、`m_fAnimFrameDeltaTime[0]` 指定配置坐标，`m_iWantedBuildupFrames[0]` 是期望前摇参数；`m_AnimationRow[0]` 连接动画表的 `m_iLastBuildupFrame` 与 `m_fHitFrame`。149个动作引用都能找到表行。
 
 判定窗口 `m_FrameRange[0].m_Anim[0]` 的 `LowerBound[0]` / `UpperBound[0]` 各含 `Type[0]` / `Value[0]`。无界端为Open，不能以其保存的0当作结束帧。图旧实现访问 `l.Value` / `u.Type` 与实际键不一致，不能据HTML里存在timeline函数认定窗口已画出。

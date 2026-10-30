@@ -1,5 +1,7 @@
 # 玩家招式待核08：朝向槽与时间边界
 
+2026-10-30修订导航：本篇旧GetInitialPlayRate读取“order+0x314”的说法省略了接口this调整，现撤回完整对象偏移解释；该函数this=完整order+1B0，实际字段为完整order+4C4。Wanted主链在OnStart生成+5A8倍率，已由16批闭合，见[player-timing-16-buildup](player-timing-16-buildup.md) B16-2至B16-4。旧日志保留，旧“初始化未知”不再代表当前全部结论。
+
 ## 构建与输入
 
 当前EXE SHA256 `a603e29f9a0a4b06e43f662ec6a67f41bea37a57216fb454e106e9e64af28254`；反汇编工具在每次执行前重算核对。当前PDB stream1 GUID `fdd64e0f-b9ed-4479-8fd8-efe0038b919d`、age1、字节970231808已重读，与inventory/pdb_overview.json匹配；记录inventory/player-unknown-08-build.json。静态调用与保存配置，不是实战验证。
