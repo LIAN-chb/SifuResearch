@@ -19,6 +19,7 @@
 /exports/**
 !/exports/**/
 !/exports/**/*.py
+!exports/20261119-连招编排-03/连招编排器.html
 
 # Historical backups and machine-local/generated state stay on disk.
 **/backup/
