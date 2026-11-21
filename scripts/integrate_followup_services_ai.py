@@ -56,7 +56,7 @@ Force服务传-1经PushFightingState的负时长分支写入Infinite标志；服
 来源：`inventory/followup-order-services-packages.json`保留10个定向包及文件哈希、完整导出／数组边界；执行见`notes/order-services-followup.md`和`inventory/followup-order-services-disassembly.json`。已提取、已解析及调用已接通分开记录；未实战验证。
 ''')
 a=json.loads((R/'inventory/followup-parry-ai-assets.json').read_text(encoding='utf-8'))
-lines=['# Grunt反击条件与动作','', '[[01机制/敌人如何选择防御|防御机制]] · [[03配置/订单与服务/索引|本轮配置入口]] · [[03配置/AI防御/索引|原情境防御表]]','',
+lines=['# Grunt反击条件与动作','', '[[01机制/敌人AI/敌人如何选择防御|防御机制]] · [[03配置/订单与服务/索引|本轮配置入口]] · [[03配置/AI防御/索引|原情境防御表]]','',
 '## 对象方向','', '| 场景 | 谁防守／谁后续动作 | 本页覆盖 |','|---|---|---|', '| 玩家招架敌人攻击 | 玩家防守，原攻击者接受反馈 | 下表实际Grunt攻击行与反馈分流 |','| 敌人招架玩家攻击 | Grunt的ParryDeflect节点成功，可能请求AI反击 | 六条完整父链及成功动作／票据引用 |','',
 '两侧事件分开核对，不能用AI成功反击配置解释玩家招架后敌人必定眩晕。','',
 '## 实际攻击引用与三种结果配置','', '| AttackDB／段 | 动画帧区间 | HitBox行 | 可招架／招架眩晕／闪避眩晕 | 普通生命／架势／硬直帧 | 格挡生命／架势／硬直帧 | 弹开生命／架势／硬直帧 |','|---|---|---|---|---|---|---|']
@@ -102,7 +102,7 @@ lines+=['','Push分支两者都经过外层10秒／掩码3，再过内层3秒／
 put('03配置/AI防御/Grunt反击条件与动作.md','\n'.join(lines))
 rel='03配置/订单与服务/索引.md';s=(V/rel).read_text(encoding='utf-8');s=s.replace('订单描述执行生命周期','新增[[03配置/订单与服务/Avoided与Deflected订单服务]]：两订单全部6条服务及掩码／角色条件。AI条件与动作见[[03配置/AI防御/Grunt反击条件与动作]]。\n\n订单描述执行生命周期');put(rel,s)
 # Fix a previously mis-copied inner test, without changing the still-distinct remainder of the AI graph.
-rel='01机制/敌人如何选择防御.md';s=(V/rel).read_text(encoding='utf-8')
+rel='01机制/敌人AI/敌人如何选择防御.md';s=(V/rel).read_text(encoding='utf-8')
 s=s.replace('| 普通 | BackFrontPush | 3 秒 | 1 | 原始掩码 2；原生反转默认false；具体覆写另查 | 招架／弹开 |','| 普通 | BackFrontPush | 外层10秒，再内层3秒 | 每层1 | 外层掩码3、内层掩码2，并有攻击属性测试；按完整父链串联 | 招架／弹开 |')
 s=s.replace('| 进阶 | BackFrontPush | 10 秒 | 1 | 原始掩码 3；原生反转默认false；具体覆写另查 | 招架／弹开 |','| 进阶 | BackFrontPush | 外层10秒，再内层3秒 | 每层1 | 此父链阈值与普通相同；其他图分支仍需分别比较 | 招架／弹开 |')
 s=section(s,'本轮补证','完整成功反击父链及实际动作引用见[[03配置/AI防御/Grunt反击条件与动作]]。本轮按原包更正了进阶Push分支的内外层摘录：内层是3秒／掩码2，外层才是10秒／掩码3。两者此分支相同，不表示全图相同。AI owner自身stun与玩家stun仍须分开。')

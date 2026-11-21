@@ -1,6 +1,6 @@
 # FireDisciple_NoAttack_ContextualDefense：AI 防御配置
 
-[[03配置/配置索引|返回配置索引]] · [[03配置/覆盖范围与读表说明|覆盖范围与读表说明]] · [[01机制/敌人如何选择防御|基础机制]]
+[[03配置/配置索引|返回配置索引]] · [[03配置/覆盖范围与读表说明|覆盖范围与读表说明]] · [[01机制/敌人AI/敌人如何选择防御|基础机制]]
 
 来源资产：Sifu/Content/DB/AI/Archetypes/FireDisciple/Variations/Defense/FireDisciple_NoAttack_ContextualDefense.uasset
 

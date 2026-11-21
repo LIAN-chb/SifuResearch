@@ -31,10 +31,18 @@ for name,s in docs.items():
         links.append({'from':name,'target':target,'valid':valid})
         if not valid:errors.append(name+': broken link '+target)
 topics=layout['topics']
+def topic_doc(source,topic):
+    direct=source+'/'+topic
+    if direct in docs:return direct
+    candidates=[n for n in docs if n.split('/')[0]==source and n.endswith('/'+topic)]
+    return sorted(candidates)[0] if candidates else None
 for topic in topics:
     for source,target in [('01机制','02实现'),('02实现','01机制')]:
-        if '[['+target+'/'+topic not in docs.get(source+'/'+topic,''):
-            errors.append('Missing reciprocal topic link '+source+' -> '+target+'/'+topic)
+        source_doc=topic_doc(source,topic);target_doc=topic_doc(target,topic)
+        if source_doc is None or target_doc is None:
+            errors.append('Missing topic document '+source+'/'+topic+' or '+target+'/'+topic);continue
+        if '[['+target_doc not in docs[source_doc]:
+            errors.append('Missing reciprocal topic link '+source_doc+' -> '+target_doc)
 referenced_sources=set()
 for name,s in docs.items():
     for ref in re.findall(r'(?<![\w/])(?:notes|exports|inventory|logs|scripts)/[A-Za-z0-9_./-]+\.(?:json|gz|csv|md|py|txt)',s):

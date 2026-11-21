@@ -207,7 +207,7 @@ context_objects=0;memory_tests=0;sequence_count=0
 for o in contexts:
  asset=o['asset'];p=catalog_map[asset];allobj=byasset[asset];seq=[x for x in allobj if x['class'].endswith('.AIInfluence_TestSequence')];mem=[x for x in allobj if x['class'].endswith('.AttackMemoryInfluenceTest')]
  context_objects+=len(allobj);memory_tests+=len(mem);sequence_count+=len(seq)
- text='# '+name(asset)+'：AI 防御配置\n\n'+nav('敌人如何选择防御')+'来源资产：'+asset+'\n\n收录本资产全部 '+str(len(allobj))+' 个已解析对象。图节点存在不代表可达或必定被选中；部分测试反转字段未保存，缺省值仍待确认。原始掩码不借用其他枚举解释。\n'
+ text='# '+name(asset)+'：AI 防御配置\n\n'+nav('敌人AI/敌人如何选择防御')+'来源资产：'+asset+'\n\n收录本资产全部 '+str(len(allobj))+' 个已解析对象。图节点存在不代表可达或必定被选中；部分测试反转字段未保存，缺省值仍待确认。原始掩码不借用其他枚举解释。\n'
  text+='\n## 图入口保存字段\n'+prop_table(normalize(o['properties']))
  text+='\n## 全部测试序列与连接\n'+tab(['序列对象','节点索引','测试引用（需共同通过，含各自反转）','关联后继节点'],[[x['export'],raw(x['properties'],'m_iNodeIndex'),compact(normalize(x['properties']).get('m_Tests[0]')),compact(normalize(x['properties']).get('m_LinkedNodes[0]'))] for x in seq])
  text+='\n## 全部攻击记忆测试\n'+tab(['对象','记忆时间字段','计数阈值','攻击标签','命中掩码原值','反转字段','闪避标志'],[[x['export'],raw(x['properties'],'m_fMemoryLimit'),raw(x['properties'],'m_uiHitsCount'),compact(normalize(x['properties']).get('m_AttackProperties[0]')),raw(x['properties'],'m_HitTypes'),raw(x['properties'],'m_bInverted'),raw(x['properties'],'m_bDodged')] for x in mem])
@@ -306,7 +306,7 @@ text+='\n## 已核对的恢复动作层\n'+tab(['资产','动作名单','掩码�
 text+='\n来源：inventory/tagged-objects.json.gz；inventory/stun-state-data.json；inventory/stun-ai-layer-semantics-disassembly.json。\n'
 add(p,text,{'kind':'hitted','objects':len(hitted),'verified_layers':len(stun['recovery_layers'])});categories['受击恢复'].append(('HittedDB 与动作恢复层',p,len(hitted)))
 # Ticket configs, all 50 assets.
-p=OUT+'/群体票据/攻击票据配置.md';text='# 全部已提取攻击票据配置\n\n'+nav('群体AI与状态反馈')
+p=OUT+'/群体票据/攻击票据配置.md';text='# 全部已提取攻击票据配置\n\n'+nav('敌人AI/群体AI与状态反馈')
 text+='收录全部 '+str(len(tickets))+' 个已提取票据配置。难度索引和 domination 阶段分别保留；单票据 count 不能解释全场同时攻击人数，原始角色掩码与 Joker 行为不提前翻译成已证实的调度结论。\n'
 text+='\n## 票据对照\n'+tab(['票据','行为','角色掩码原值','基础数量','普通数量','简单数量','困难数量','来源资产'],[[wl(p+'#'+name(x['asset']),name(x['asset'])),x['config'].get('m_eBehavior[0]'),x['config'].get('m_eCombatRolesMask[0]'),x['config'].get('m_iCount[0]'),x['config'].get('m_iCountPerDifficulty[0]'),x['config'].get('m_iCountPerDifficulty[1]'),x['config'].get('m_iCountPerDifficulty[2]'),x['asset']] for x in tickets])
 for x in tickets:text+='\n## '+name(x['asset'])+'\n\n来源资产：'+x['asset']+'\n'+prop_table(x['config'])
@@ -382,9 +382,9 @@ index+=tab(['配置主题','收录内容','入口','对应基础机制'],[
 ['动作与时序',str(len(attack_objects))+' 个动作资源、'+str(stats['animation_rows'])+' 条动画行及保存的命中／许可窗口',wl(OUT+'/动作与时序/索引'),wl('01机制/攻击冲击力韧性与伤害')],
 ['受击与抗性',str(len(resistance))+' 套反应配置与状态矩阵',wl(OUT+'/受击与抗性/索引'),wl('01机制/受击硬直与脱离')],
 ['敌人原型',str(len(archetypes))+' 个父类链已核对的原型，含本层属性与配置引用',wl(OUT+'/敌人原型/索引'),wl('01机制/受击硬直与脱离')],
-['AI 防御',str(len(contexts))+' 套情境图、全部测试／节点配置',wl(OUT+'/AI防御/索引'),wl('01机制/敌人如何选择防御')],
+['AI 防御',str(len(contexts))+' 套情境图、全部测试／节点配置',wl(OUT+'/AI防御/索引'),wl('01机制/敌人AI/敌人如何选择防御')],
 ['受击恢复',str(len(hitted))+' 套 HittedDB 及已核对的动作恢复层',wl(OUT+'/受击恢复/索引'),wl('01机制/受击硬直与脱离')],
-['群体票据',str(len(tickets))+' 套攻击票据，难度与阶段冷却分别保留',wl(OUT+'/群体票据/索引'),wl('01机制/群体AI与状态反馈')]])
+['群体票据',str(len(tickets))+' 套攻击票据，难度与阶段冷却分别保留',wl(OUT+'/群体票据/索引'),wl('01机制/敌人AI/群体AI与状态反馈')]])
 index+='## 建议查找方式\n'+tab(['想查什么','从哪里开始'],[
 ['玩家某个攻击的伤害／硬直／韧性阈值','先查动作资源中的 HitBox 引用，再去对应效果表按原始行名定位'],
 ['普通与进阶杂兵为何表现不同','先查 Grunt 原型本层和父类引用，再对照抗性数据库与情境图'],

@@ -12,6 +12,8 @@ ENFORCED = [
     'AGENTS.md',
     'PROJECT.md',
     'notes/research-workflow.md',
+    'notes/rule-maintenance.md',
+    'notes/workspace-layout.md',
     'notes/mechanism-writing.md',
     'notes/capability-discovery.md',
     'notes/version-control.md',

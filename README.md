@@ -12,9 +12,12 @@
 - inventory/：版本标识、清单、哈希、符号、类型和解析中间结果。
 - exports/：面向研究主题的CSV/JSON。
 - notes/：报告、范围、证据与未验证事项。
+- notes/batches/<批次ID>/：批次规格、任务与验收清单；已归档攻击票据批次见 [规格](notes/batches/20261102-敌人AI票据-01/spec.md)。
 - adr/：用户决策、选择理由、适用边界与历史关系；见 [决策索引](adr/README.md)。
 - 研究管理：见 [工具矩阵](notes/tool-capabilities.md)、[方法复盘](notes/retrospectives/README.md)、[版本管理](notes/version-control.md)；阅读版见 [项目工作流与规则](Sifu/项目工作流与规则.md)。
 - logs/：工具输出与静态反汇编。
+
+根目录的文件归属与迁移验收见 [工作区目录约定](notes/workspace-layout.md)；协作规则的分层与维护见 [规则维护流程](notes/rule-maintenance.md)。
 
 重跑：使用 `D:\Programes\PY\python.exe` 执行 scripts 中相应脚本；无须启动游戏。脚本内游戏路径绑定本机Epic安装路径。索引/导出脚本会更新本研究目录的同名生成结果；repak提取脚本不启用强制覆盖，重复提取需先确认已有输出范围。不要对其他构建复用这里的EXE地址。
 
